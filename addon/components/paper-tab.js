@@ -112,7 +112,7 @@ export default Ember.Component.extend(RippleMixin, ProxiableMixin, ColorMixin, {
       let left = context.$()[0].offsetLeft + context.get('offsetLeft');
       let width = context.$()[0].clientWidth;
       context.set('self.offsetLeft', left);
-      context.set('self.offsetWidth', width);
+      context.set('self.offsetWidth', width + 1); // let's not get fast and loose with ellipses :)
     }
   }),
 
