@@ -114,7 +114,9 @@ export default Ember.Component.extend({
       context.set('loaded', true);
       context.set('canvasWidth', context.$().outerWidth());
       $(window).on('resize', Ember.run.bind(context, function() {
-        this.set('canvasWidth', this.$().outerWidth());
+        if (this.$()) {
+          this.set('canvasWidth', this.$().outerWidth());
+        }
       }));
     });
   },
