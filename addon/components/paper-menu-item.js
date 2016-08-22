@@ -13,6 +13,7 @@ export default Component.extend(ChildMixin, {
   actions: {
     handleClick(event) {
       this.sendAction('onClick', event);
+      this.get('dropdown.actions').close();
     }
   },
   mouseEnter() {
