@@ -33,6 +33,7 @@ Router.map(function() {
     this.route('switch');
     this.route('toolbar');
     this.route('tabs');
+    this.route('virtual-repeat');
   });
 
   this.route('layout', function() {

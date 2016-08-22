@@ -2,110 +2,96 @@
  * @module ember-paper
  */
 import Ember from 'ember';
-import PaperMenuAbstract from './paper-menu-abstract';
+import PaperMenuContentInner from './paper-menu-content-inner';
+import { indexOfOption, optionAtIndex, countOptions } from 'ember-power-select/utils/group-utils';
+const { computed, run } = Ember;
 
-const { Component } = Ember;
+function advanceSelectableOption(options, currentOption, step) {
+  let resultsLength = countOptions(options);
+  let startIndex = Math.min(Math.max(indexOfOption(options, currentOption) + step, 0), resultsLength - 1);
+  let { disabled, option } = optionAtIndex(options, startIndex);
+  while (option && disabled) {
+    let next = optionAtIndex(options, startIndex += step);
+    disabled = next.disabled;
+    option = next.option;
+  }
+  return option;
+}
 
-let searchStr = '';
-let clearSearchTimeout, optNodes, optText;
-const CLEAR_SEARCH_AFTER = 300;
-
-/**
- * @class PaperSelectMenu
- * @extends Ember.Component
- */
-export default Component.extend({
+export default PaperMenuContentInner.extend({
   tagName: 'md-select-menu',
   classNames: ['md-default-theme'],
-
-  constants: Ember.inject.service(),
-
-  menuAbstract: Ember.computed(function() {
-    let container = this.nearestOfType(PaperMenuAbstract);
-    return container;
-  }),
+  classNameBindings: ['searchEnabled:md-overflow'],
+  enabledOptions: computed.filterBy('childComponents', 'disabled', false),
+  didInsertElement() {
+    run.next(() => {
+      let focusTarget = this.$('md-option[aria-selected="true"]');
+      if (!focusTarget || !focusTarget.length) {
+        focusTarget = this.get('enabledOptions.firstObject.element');
+        let newHighlighted = advanceSelectableOption(this.dropdown.results, this.dropdown.highlighted, -1);
+        this.dropdown.actions.highlight(newHighlighted, null);
+      } else {
+        focusTarget = focusTarget[0];
+      }
+      focusTarget.focus();
+    });
+  },
 
   keyDown(ev) {
-    let KeyCodes = this.get('constants').KEYCODE;
-    switch (ev.keyCode) {
-      case KeyCodes.get('TAB'):
-      case KeyCodes.get('ESCAPE'):
-        this.get('menuAbstract').send('toggleMenu');
+    switch (ev.which) {
+      case this.get('constants.KEYCODE.ESCAPE'):
+        this.dropdown.actions.close();
         break;
-      case KeyCodes.get('UP_ARROW'):
-        this.focusPrevOption();
+      case this.get('constants.KEYCODE.LEFT_ARROW'):
+      case this.get('constants.KEYCODE.UP_ARROW'):
+        ev.preventDefault();
+        this.focusOption(ev, -1);
+        let newHighlighted = advanceSelectableOption(this.dropdown.results, this.dropdown.highlighted, -1);
+        this.dropdown.actions.highlight(newHighlighted, ev);
+        this.dropdown.actions.scrollTo(newHighlighted);
         break;
-      case KeyCodes.get('DOWN_ARROW'):
-        this.focusNextOption();
+      case this.get('constants.KEYCODE.RIGHT_ARROW'):
+      case this.get('constants.KEYCODE.DOWN_ARROW'):
+        ev.preventDefault();
+        this.focusOption(ev, 1);
+        let newHighlighted2 = advanceSelectableOption(this.dropdown.results, this.dropdown.highlighted, 1);
+        this.dropdown.actions.highlight(newHighlighted2, ev);
+        this.dropdown.actions.scrollTo(newHighlighted2);
         break;
-      default:
-        if (ev.keyCode >= 31 && ev.keyCode <= 90) {
-          let optNode = this.optNodeForKeyboardSearch(ev);
-          this.get('menuAbstract').set('focusedNode', optNode || this.get('menuAbstract').get('focusedNode'));
-          if (optNode) {
-            optNode.focus();
-          }
-        }
+      case this.get('constants.KEYCODE.ENTER'):
+        ev.preventDefault();
+        this.dropdown.actions.choose(this.dropdown.highlighted);
+        break;
     }
   },
 
-  optNodeForKeyboardSearch(e) {
-    if (clearSearchTimeout) {
-      clearTimeout(clearSearchTimeout);
-    }
-    clearSearchTimeout = setTimeout(function() {
-      clearSearchTimeout = undefined;
-      searchStr = '';
-      optText = undefined;
-      optNodes = undefined;
-    }, CLEAR_SEARCH_AFTER);
-    searchStr += String.fromCharCode(e.keyCode);
-    let search = new RegExp(`^${searchStr}`, 'i');
-    if (!optNodes) {
-      optNodes = this.$().find('md-option');
-      optText = new Array(optNodes.length);
-      optNodes.each(function(i, el) {
-        optText[i] = el.textContent.trim();
-      });
-    }
-    for (let i = 0; i < optText.length; ++i) {
-      if (search.test(optText[i])) {
-        return optNodes[i];
+  focusOption(e, direction) {
+    let currentItem = this.$(e.target).closest('md-option');
+
+    let children = this.get('enabledMenuItems');
+    let items = children.map((child) => child.element);
+
+    let currentIndex = items.indexOf(currentItem[0]);
+
+    // Traverse through our elements in the specified direction (+/-1) and try to
+    // focus them until we find one that accepts focus
+    for (let i = currentIndex + direction; i >= 0 && i < items.length; i = i + direction) {
+      let focusTarget = items[i];
+      let didFocus = this.attemptFocus(focusTarget);
+      if (didFocus) {
+        break;
       }
     }
   },
 
-  focusOption(direction) {
-    let optionsArray = this.$().find('md-option').toArray();
-    let index = optionsArray.indexOf(this.get('menuAbstract').get('focusedNode'));
-
-    let newOption;
-
-    do {
-      if (index === -1) {
-        // We lost the previously focused element, reset to first option
-        index = 0;
-      } else if (direction === 'next' && index < optionsArray.length - 1) {
-        index++;
-      } else if (direction === 'prev' && index > 0) {
-        index--;
+  attemptFocus(el) {
+    if (el && el.getAttribute('tabindex') !== -1) {
+      el.focus();
+      if (document.activeElement === el) {
+        return true;
+      } else {
+        return false;
       }
-      newOption = optionsArray[index];
-      if (newOption.hasAttribute('disabled')) {
-        newOption = undefined;
-      }
-    } while (!newOption && index < optionsArray.length - 1 && index > 0);
-
-    if (newOption) {
-      newOption.focus();
     }
-    this.get('menuAbstract').set('focusedNode', newOption);
-  },
-  focusNextOption() {
-    this.focusOption('next');
-  },
-  focusPrevOption() {
-    this.focusOption('prev');
   }
-
 });

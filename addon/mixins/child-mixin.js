@@ -19,7 +19,6 @@ export default Mixin.create({
   parentComponent: computed(function() {
     return this.nearestOfType(this.get('parentClass'));
   }),
-
   init() {
     this._super(...arguments);
     if (this.get('parentComponent')) {

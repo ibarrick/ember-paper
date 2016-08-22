@@ -2,13 +2,11 @@
  * @module ember-paper
  */
 import Ember from 'ember';
-import PaperMenuAbstract from './paper-menu-abstract';
+import PaperMenu from './paper-menu';
+
+const { $, run } = Ember;
 
 const SELECT_EDGE_MARGIN = 8;
-
-function clamp(min, n, max) {
-  return Math.max(min, Math.min(n, max));
-}
 
 function getOffsetRect(node) {
   return node ? {
@@ -19,109 +17,21 @@ function getOffsetRect(node) {
   } : { left: 0, top: 0, width: 0, height: 0 };
 }
 
-/**
- * @class PaperSelectCore
- * @extends PaperMenuAbstract
- */
-export default PaperMenuAbstract.extend({
-  tagName: 'md-select',
-  placeholder: null,
+function clamp(min, n, max) {
+  return Math.max(min, Math.min(n, max));
+}
 
-  classNames: ['md-default-theme'],
-
-  attributeBindings: ['tabindex', 'readonlyAttr:readonly', 'multipleAttr:multiple'],
-  tabindex: Ember.computed('readonly', function() {
-    return this.get('readonly') ? -1 : 0;
-  }),
-  readonly: null,
-  multiple: null,
-
-  readonlyAttr: Ember.computed('readonly', function() {
-    return this.get('readonly') ? 'readonly' : null;
-  }),
-  multipleAttr: Ember.computed('multiple', function() {
-    return this.get('multiple') ? 'multiple' : null;
-  }),
-
-  preventMenuOpen: Ember.computed('disabled', function() {
-    return !!this.get('disabled');
-  }),
-
-  label: Ember.computed('value', 'itemLabelCallback', function() {
-    if (!this.get('value')) {
-      return null;
-    }
-    if (this.get('itemLabelCallback')) {
-      return this.get('itemLabelCallback').call(this, this.get('value'));
-    }
-    return this.get('value');
-  }),
-
-  click() {
-    this.send('toggleMenu');
-  },
-
-  actions: {
-    selectOption(value) {
-      this.get('onChange')(value);
-    },
-    deselectOption() {
-      this.get('onChange')(null);
-    }
-  },
-
-  /* @todo move to util */
-  floatingScrollbars: Ember.computed(function() {
-    let tempNode = Ember.$('<div style="width: 100%; z-index: -1; position: absolute; height: 35px; overflow-y: scroll"><div style="height: 60;"></div></div>');
-    Ember.$('body').append(tempNode[0]);
-    let hasFloating = (tempNode[0].offsetWidth === tempNode[0].childNodes[0].offsetWidth);
-    tempNode.remove();
-    return hasFloating;
-  }),
-
-  keyDown(e) {
-    let KeyCodes = this.get('constants').KEYCODE;
-    let allowedCodes = [
-      KeyCodes.get('SPACE'),
-      KeyCodes.get('ENTER'),
-      KeyCodes.get('UP_ARROW'),
-      KeyCodes.get('DOWN_ARROW')
-    ];
-
-    if (allowedCodes.indexOf(e.keyCode) !== -1) {
-      // prevent page scrolling on interaction
-      e.preventDefault();
-      this.send('toggleMenu');
-    } else {
-      if (e.keyCode <= 90 && e.keyCode >= 31) {
-        e.preventDefault();
-        /* todo. use paper-select-menu's optNodeForKeyboardSearch.
-        let node = this.optNodeForKeyboardSearch(e);
-        if (!node) return;
-        this.set('focusedNode', node || this.get('focusedNode'));
-        if (node) {
-          node.focus();
-        }*/
-      }
-    }
-  },
-
-  /*
-   * Select menu have other animations then "md-menu", so we override the positionMenu here.
-   */
-  positionMenu(element) {
-    if (!this.get('isOpen')) {
-      return;
-    }
-    let _self = this;
+export default PaperMenu.extend({
+  performFullReposition(trigger, dropdown) {
+    let $dropdown = $(dropdown);
     let opts = {
-      target: this.$(),
+      target: $(trigger),
       parent: Ember.$('body'),
-      selectEl: element.find('md-select-menu'),
-      contentEl: element.find('md-content')
+      selectEl: $dropdown.find('md-select-menu'),
+      contentEl: $dropdown.find('md-content')
     };
 
-    let containerNode = element.get(0);
+    let containerNode = $dropdown.get(0);
     let targetNode = opts.target[0].firstElementChild; // target the label
     let parentNode = opts.parent.get(0);
     let selectNode = opts.selectEl.get(0);
@@ -170,9 +80,6 @@ export default PaperMenuAbstract.extend({
     }
 
     // Remove padding before we compute the position of the menu
-    if (isScrollable) {
-      selectNode.classList.add('md-overflow');
-    }
 
     let focusedNode = centeredNode;
     if ((focusedNode.tagName || '').toUpperCase() === 'MD-OPTGROUP') {
@@ -181,6 +88,7 @@ export default PaperMenuAbstract.extend({
     }
 
     // Get the selectMenuRect *after* max-width is possibly set above
+    containerNode.style.display = 'block';
     let selectMenuRect = selectNode.getBoundingClientRect();
     let centeredRect = getOffsetRect(centeredNode);
 
@@ -228,25 +136,56 @@ export default PaperMenuAbstract.extend({
         centeredRect.paddingRight}px`;
     }
 
-    // Keep left and top within the window
     let containerRect = containerNode.getBoundingClientRect();
-    containerNode.style.left = `${clamp(bounds.left, left, bounds.right - containerRect.width)}px`;
-    containerNode.style.top = `${clamp(bounds.top, top, bounds.bottom - containerRect.height)}px`;
-    selectNode.style[this.get('constants').get('CSS').TRANSFORM_ORIGIN] = transformOrigin;
 
-    selectNode.style[this.get('constants').get('CSS').TRANSFORM] = `scale(
-      ${Math.min(targetRect.width / selectMenuRect.width, 1.0)},
-      ${Math.min(targetRect.height / selectMenuRect.height, 1.0)}
-    )`;
+    let dropdownTop = clamp(bounds.top, top, bounds.bottom - containerRect.height);
+    let dropdownLeft = clamp(bounds.left, left, bounds.right - containerRect.width);
 
-    window.requestAnimationFrame(function() {
-      element.addClass('md-active');
-      selectNode.style[_self.get('constants').get('CSS').TRANSFORM] = '';
-      if (focusedNode && !focusedNode.hasAttribute('disabled')) {
-        _self.set('focusedNode', focusedNode);
-        focusedNode.focus();
+    let scaleX = Math.min(targetRect.width / selectMenuRect.width, 1.0);
+    let scaleY = Math.min(targetRect.height / selectMenuRect.height, 1.0);
+    let style = {
+      top: `${dropdownTop}px`,
+      left: `${dropdownLeft}px`,
+      // Animate a scale out if we aren't just repositioning
+      transform: !this.didAnimateScale ? `scale(${scaleX}, ${scaleY})` : undefined,
+      transformOrigin
+    };
+
+    this.didAnimateScale = true;
+
+    this.applyReposition(trigger, dropdown, { style });
+  },
+  actions: {
+    didOpen() {
+      let appRoot = this.get('appRoot');
+      let dropdown = this.get('dropdown');
+      this.dropdownElement = document.getElementById(this.dropdownId);
+      let triggerId = this.get('triggerId');
+      if (triggerId) {
+        this.triggerElement = document.getElementById(this.triggerId);
       }
-    });
-  }
+      appRoot.addEventListener('mousedown', this.handleRootMouseDown, true);
+      if (this.get('isTouchDevice')) {
+        appRoot.addEventListener('touchstart', this.touchStartHandler, true);
+        appRoot.addEventListener('touchend', this.handleRootMouseDown, true);
+      }
 
+      let onFocusIn = this.get('onFocusIn');
+      if (onFocusIn) {
+        this.dropdownElement.addEventListener('focusin', (e) => onFocusIn(dropdown, e));
+      }
+      let onFocusOut = this.get('onFocusOut');
+      if (onFocusOut) {
+        this.dropdownElement.addEventListener('focusout', (e) => onFocusOut(dropdown, e));
+      }
+
+      if (!this.get('renderInPlace')) {
+        this.addGlobalEvents();
+      }
+      dropdown.actions.reposition();
+      if (this.get('animationEnabled')) {
+        run.scheduleOnce('afterRender', this, this.animateIn);
+      }
+    }
+  }
 });
