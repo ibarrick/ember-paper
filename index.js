@@ -25,6 +25,14 @@ module.exports = {
       return '<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,400italic">' +
         '<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">';
     }
+    if (type === 'body-footer') {
+      var emberBasicDropdown = this.addons.filter(function(addon) {
+        return addon.name === 'ember-power-select';
+      })[0];
+      return emberBasicDropdown.contentFor(type, config);
+    } else {
+      return '';
+    }
   },
 
   treeForStyles: function(tree) {
