@@ -1,7 +1,7 @@
 import PowerOptions from 'ember-power-select/components/power-select/options';
 import Ember from 'ember';
 
-const { $ } = Ember;
+const { $, run } = Ember;
 
 export default PowerOptions.extend({
   tagName: 'md-content',
@@ -28,8 +28,9 @@ export default PowerOptions.extend({
       let optionIndex = optionItem[0].getAttribute('data-option-index');
       action(this._optionFromIndex(optionIndex), e);
     };
-    this.element.addEventListener('mouseup', (e) => findOptionAndPerform(this.get('select.actions.choose'), e));
-    this.element.addEventListener('mouseover', (e) => findOptionAndPerform(this.get('select.actions.highlight'), e));
+    run.later(this,() => { this.element.addEventListener('mouseup', (e) => findOptionAndPerform(this.get('select.actions.choose'), e)); }, 50);
+    
+    //this.element.addEventListener('mouseover', (e) => findOptionAndPerform(this.get('select.actions.highlight'), e));
     if (this.get('isTouchDevice')) {
       this._addTouchEvents();
     }
