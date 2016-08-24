@@ -1,5 +1,10 @@
 {{#if extra.label}}
-	{{paper-input label=extra.label flex=flex value=text onChange=(action 'handleInputLocal') onFocus=(action onFocus) onBlur=(action onBlur) onKeyDown=(action 'handleKeydown')}}
+	{{#if (and (or selected text) allowClear (not select.disabled))}}
+		{{paper-input label=extra.label flex=flex value=text onChange=(action 'handleInputLocal') onFocus=(action onFocus) onBlur=(action onBlur) onKeyDown=(action 'handleKeydown')}}
+	{{else}}
+		{{paper-input label=extra.label flex=flex value=text onChange=(action 'handleInputLocal') onFocus=(action onFocus) onBlur=(action onBlur) onKeyDown=(action 'handleKeydown')}}
+	{{/if}}
+	
 {{else}}
 	<input type="search"
 	  value={{text}}
@@ -12,10 +17,10 @@
 	  onkeydown={{action "handleKeydown"}}
 	  disabled={{disabled}}
 	  onmousedown={{action "stopPropagation"}}>
+	  {{#if (and (or selected text) allowClear (not select.disabled))}}
+		<button onmousedown={{action 'clear'}}>{{paper-icon 'close'}}</button>
+	{{/if}}
 {{/if}}
 {{#if select.loading}}
 	{{paper-progress-linear}}
-{{/if}}
-{{#if (and (or selected text) allowClear (not select.disabled))}}
-<button onmousedown={{action 'clear'}}>{{paper-icon 'close'}}</button>
 {{/if}}

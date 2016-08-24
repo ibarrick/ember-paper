@@ -90,5 +90,9 @@
 {{/unless}}
 
 {{#if iconRight}}
-  {{paper-icon iconRight}}
+    {{#if onIconClick}}
+        {{#paper-button bubbles=false class="top-zero" onClick=onIconClick iconButton=true}}{{paper-icon iconRight}}{{/paper-button}}
+    {{else}}
+        {{paper-icon iconRight}}
+    {{/if}}
 {{/if}}
