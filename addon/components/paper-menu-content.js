@@ -35,15 +35,15 @@ export default ContentComponent.extend({
     clone.id = `${clone.id}--clone`;
     let $clone = $(clone);
     parentElement.appendChild(clone);
-    window.requestAnimationFrame(() => {
+    run.later(this,() => {
       if (!this.get('isDestroyed')) {
         this.set('isActive', false);
-        $clone.addClass('md-leave');
-        waitForAnimations(clone, function() {
-          $clone.removeClass('md-active');
-          parentElement.removeChild(clone);
-        });
       }
-    });
+      $clone.addClass('md-leave');
+      waitForAnimations(clone, function() {
+        $clone.removeClass('md-active');
+        parentElement.removeChild(clone);
+      });
+    },200);
   }
 });
