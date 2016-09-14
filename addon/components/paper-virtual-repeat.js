@@ -60,9 +60,12 @@ export default VirtualEachComponent.extend({
         // this.rerender();
       }
     }
-    run.schedule('actions', () => {
-      this.set('height', this.get('horizontal') ? this.$()[0].clientWidth : this.$()[0].clientHeight);
-    });
+    if (!this.get('height')) {
+      run.schedule('actions', () => {
+        this.set('height', this.get('horizontal') ? this.$()[0].clientWidth : this.$()[0].clientHeight);
+      });
+    }
+    
 
   },
   offsetterStyle: computed('horizontal', '_marginTop', function() {
