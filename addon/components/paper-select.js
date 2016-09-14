@@ -24,7 +24,8 @@ export default PowerSelect.extend(ValidationMixin, {
   optionsComponent: 'paper-select-options',
   triggerComponent: 'paper-select-trigger',
   beforeOptionsComponent: 'paper-select-search',
-  classNameBindings: ['isInvalidAndTouched:md-input-invalid'],
+  focused: false,
+  classNameBindings: ['isInvalidAndTouched:md-input-invalid','selected:md-input-has-value', 'focused:md-input-focused'],
   searchEnabled: false,
   validationProperty: 'selected',
   isTouched: false,
@@ -59,5 +60,20 @@ export default PowerSelect.extend(ValidationMixin, {
       this._super(...arguments);
       this.notifyValidityChange();
     }
-  }
+  },
+  focusIn() {
+    if (!this.get('disabled') && !this.get('focusOnlyOnKey') || !this.get('pressed')) {
+      this.set('focused', true);
+    }
+  },
+  focusOut() {
+    this.set('focused', false);
+  },
+  shouldShowLabel: computed('focused', 'label', 'selected', function() {
+    if (this.get('label')) {
+      return this.get('focused') || this.get('selected');
+    } else {
+      return false;
+    }
+  })
 });
