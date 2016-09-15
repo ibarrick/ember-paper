@@ -23,6 +23,7 @@ export default PowerSelect.extend(ValidationMixin, {
   onchange: computed.alias('onChange'),
   optionsComponent: 'paper-select-options',
   triggerComponent: 'paper-select-trigger',
+  searchMessageComponent: 'paper-search-message',
   beforeOptionsComponent: 'paper-select-search',
   focused: false,
   classNameBindings: ['isInvalidAndTouched:md-input-invalid','selected:md-input-has-value', 'focused:md-input-focused'],
