@@ -40,7 +40,7 @@ export default Controller.extend({
         { id: 5, name: 'Velma Dinkley' }
       ]);
 
-      run.later(_self, function() {
+      run.later(this, function() {
         /*
          * Two arguments to the resolve:
          * - data from the server
@@ -48,7 +48,7 @@ export default Controller.extend({
          */
         resolve(dataFromServer);
       }, waitMS);
-    });
+    }.bind(this));
    }
   },
   users: computed(function() {
