@@ -6,6 +6,8 @@ import ContentComponent from 'ember-basic-dropdown/components/basic-dropdown/con
 import { nextTick } from 'ember-css-transitions/mixins/transition-mixin';
 const { $ } = Ember;
 
+const MutObserver = self.window.MutationObserver || self.window.WebKitMutationObserver;
+
 function waitForAnimations(element, callback) {
   let computedStyle = window.getComputedStyle(element);
   if (computedStyle.transitionDuration && computedStyle.transitionDuration !== '0s') {
@@ -53,5 +55,22 @@ export default ContentComponent.extend({
         });
       }
     });
+  },
+  addGlobalEvents() {
+    self.window.addEventListener('scroll', this.runloopAwareReposition);
+    self.window.addEventListener('resize', this.runloopAwareReposition);
+    self.window.addEventListener('orientationchange', this.runloopAwareReposition);
+    if (MutObserver) {
+      this.mutationObserver = new MutObserver((mutations) => {
+        if (mutations[0].addedNodes.length || mutations[0].removedNodes.length) {
+   //       this.runloopAwareReposition();
+        }
+      });
+      this.mutationObserver.observe(this.dropdownElement, { childList: true, subtree: true });
+    } else {
+      this.dropdownElement.addEventListener('DOMNodeInserted', this.runloopAwareReposition, false);
+      this.dropdownElement.addEventListener('DOMNodeRemoved', this.runloopAwareReposition, false);
+    }
   }
+
 });

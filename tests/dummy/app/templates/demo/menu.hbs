@@ -31,6 +31,10 @@
           {{paper-icon item.icon}}
           <span>{{item.title}}</span>
         {{/content.menu-item}}
+        {{#content.menu-item onClick="openSomething"}}
+          {{paper-icon item.icon}}
+          <span>{{item.title}}</span>
+        {{/content.menu-item}}
       {{/each}}
 
       {{#content.menu-item onClick="openSomething" disabled=true}}
