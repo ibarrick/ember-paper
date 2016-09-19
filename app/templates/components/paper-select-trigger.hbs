@@ -2,7 +2,8 @@
   {{#if selectedItemComponent}}
     {{component selectedItemComponent option=(readonly select.selected) select=(readonly select)}}
   {{else}}
-    <span class="ember-power-select-selected-item">{{yield select.selected select}}</span>
+    <span class="ember-power-select-selected-item" style="max-width: 100%; flex: 1 1 auto;">
+      <div class="md-text">{{yield select.selected select}}</div></span>
   {{/if}}
   {{#if (and allowClear (not select.disabled))}}
     <span class="ember-power-select-clear-btn" onmousedown={{action "clear"}}>&times;</span>

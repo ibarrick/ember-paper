@@ -1,1 +1,5 @@
 @import "ember-power-select";
+
+.md-select-value *:first-child {
+	flex: 1 1 auto !important; 
+}
