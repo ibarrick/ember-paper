@@ -32,6 +32,7 @@ export default VirtualEachComponent.extend({
   },
   _marginTop: computed('_totalHeight', '_startAt', '_visibleItemCount', 'itemHeight', function() {
     let itemHeight = this.get('itemHeight');
+    console.log('computing marginTop');
     let totalHeight = get(this, '_totalHeight');
     let margin = get(this, '_startAt') * itemHeight;
     let visibleItemCount = get(this, '_visibleItemCount');
@@ -39,7 +40,8 @@ export default VirtualEachComponent.extend({
 
     return Math.min(maxMargin, margin);
   }).readOnly(),
-  contentStyle: computed('_marginTop', '_totalHeight', function() {
+  contentStyle: computed('_totalHeight', function() {
+    console.log('computing contentStyle');
     let height = Handlebars.Utils.escapeExpression(get(this, '_totalHeight'));
 
     return new Handlebars.SafeString(this.get('horizontal') ? `width: ${height}px;` : `height: ${height}px;`);
@@ -51,6 +53,7 @@ export default VirtualEachComponent.extend({
   }).readOnly(),
   didRender() {
     if (!this.get('itemHeight')) {
+      console.log('SETTING ITEM HEIGHT');
       let elem = this.get('containerSelector') ? $(this.get('containerSelector'))[0].firstElementChild : this.$('.md-virtual-repeat-offsetter')[0].firstElementChild;
       if (elem) {
         run.schedule('actions', () => {
@@ -60,14 +63,16 @@ export default VirtualEachComponent.extend({
         // this.rerender();
       }
     }
-    run.schedule('actions', () => {
-      this.set('height', this.get('horizontal') ? this.$()[0].clientWidth : this.$()[0].clientHeight);
-    });
-
+    if (!this.get('height')) {
+      console.log('SETTING HEIGHT');
+      run.schedule('actions', () => {
+        this.set('height', this.get('horizontal') ? this.$()[0].clientWidth : this.$()[0].clientHeight);
+      });
+    }
   },
   offsetterStyle: computed('horizontal', '_marginTop', function() {
     let margin = Handlebars.Utils.escapeExpression(get(this, '_marginTop'));
-
+    console.log('computing offsetterStyle');
     return new Handlebars.SafeString(this.get('horizontal') ? `transform: translateX(${margin}px);` : `transform: translateY(${margin}px);`);
   }).readOnly(),
   // offsetterStyle: computed('horizontal','_marginTop', function() {
