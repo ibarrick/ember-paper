@@ -49,7 +49,7 @@
     oninput={{action "handleInput"}}
 
     accept={{passThru.accept}}
-    autocomplete="new-password"
+	autocomplete={{if (not allowAutocomplete) "new-password"}}
     autocorrect={{passThru.autocorrect}}
     autocapitalize={{passThru.autocapitalize}}
     autosave={{passThru.autosave}}
